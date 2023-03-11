@@ -4,42 +4,58 @@ import numpy
 import random
 from data import GetTickerData
 import shutup
+from math import ceil
+import plotly.express as px
+import pandas as pd
 
 shutup.please()
 
-# Define the neural network architecture
+# dataframe = dict(
+#     Epoch = [0],
+#     Loss = [0]
+# )
+# figure = px.line(dataframe, x='Epoch', y='Loss', title='Loss Per Epoch')
+# figure.show()
+
 model = torch.nn.Sequential(
-    torch.nn.Linear(120, 3000),
-    torch.nn.Sigmoid(),
-    torch.nn.Linear(3000, 1),
+    torch.nn.Linear(120, 4000),
+    torch.nn.LeakyReLU(),
+    torch.nn.Linear(4000, 2000),
+    torch.nn.LeakyReLU(),
+    torch.nn.Linear(2000, 500),
+    torch.nn.LeakyReLU(),
+    torch.nn.Linear(500, 1),
     torch.nn.Tanh()
 )
 
-# Load the pre-trained model
 model.load_state_dict(torch.load('./models/model.pt'))
 
-# Set the hyperparameters for training
-learnRate = 0.0000005
+learnRate = 0.0000001
 epochs = 100
-batchSize = 277
+batchSize = 100
 
 dtype = torch.float
 device = torch.device("cpu")
 
-print('Getting data\n')
+print('Getting data . . .\n')
 
-# Load the data
-data = GetTickerData('NVDA')
+data = GetTickerData('AMZN')
+dataLength = len(data[0])
 
-# Define the loss function and optimizer
 lossFunction = torch.nn.MSELoss(reduction='sum')
 optimizer = torch.optim.Adam(model.parameters(), lr=learnRate)
 
-# Train the model
+dataset = TensorDataset(torch.FloatTensor(data[0]), torch.FloatTensor(data[1]))
+loader = DataLoader(dataset, shuffle=True, batch_size=batchSize)
+
+data = None # Clear to save memory
+
+lossesArray = []
+epochsArray = []
 for epoch in range(epochs):
     print(f"Epoch {epoch + 1}\n-------------------------------")
-    averageLoss = []
-    for [i, input], expectedOutput in zip(enumerate(data[0]), data[1]):
+    averageLossArray = []
+    for i, [input, expectedOutput] in enumerate(loader):
         # if len(input) != 120:
         #     continue
 
@@ -48,16 +64,26 @@ for epoch in range(epochs):
 
         prediction = model(input.unsqueeze(dim=0))
         loss = lossFunction(prediction, expectedOutput)
-        averageLoss.append(loss)
+        averageLossArray.append(loss)
         loss.backward(retain_graph=True)
         optimizer.step()
         optimizer.zero_grad()
-        if i % batchSize == 0:
-            print(f'\rTraining Sample : [{i}/{len(data[0])}]', end='')
-    print(f'\rTraining Sample : [{len(data[0])}/{len(data[0])}]', end='')
+        print(f'\rTraining Sample : [{i}/{round(dataLength/batchSize)}]', end='')
+    print(f'\rTraining Sample : [{i}/{round(dataLength/batchSize)}]', end='')
 
-    print(f'\nAverage Loss : {(sum(averageLoss))/(len(averageLoss))}')
+    averageLoss = (sum(averageLossArray))/(len(averageLossArray))
+    lossesArray.append(averageLoss)
+    epochsArray.append(epoch+1)
+
+    # with torch.no_grad():
+    #     dataframe = dict(
+    #         Epoch = epochsArray,
+    #         Loss = lossesArray
+    #     )
+    #     figure = px.line(dataframe, x='Epoch', y='Loss', title='Loss Per Epoch')
+    #     figure.update()
+
+    print(f'\nAverage Loss : {averageLoss}')
     print('-------------------------------\n')
 
-    # Save the trained model
     torch.save(model.state_dict(), './models/model.pt')
