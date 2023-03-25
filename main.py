@@ -1,89 +1,126 @@
-import torch
-from torch.utils.data import DataLoader, TensorDataset
-import numpy
-import random
-from data import GetTickerData
-import shutup
-from math import ceil
-import plotly.express as px
-import pandas as pd
+if __name__ == '__main__':
+    import torch
+    from torch.utils.data import DataLoader, TensorDataset
+    import numpy
+    import random
+    from data import GetTickerData
+    import shutup
+    from math import floor
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import pandas as pd
 
-shutup.please()
+    shutup.please()
 
-# dataframe = dict(
-#     Epoch = [0],
-#     Loss = [0]
-# )
-# figure = px.line(dataframe, x='Epoch', y='Loss', title='Loss Per Epoch')
-# figure.show()
+    model = torch.nn.Sequential(
+        torch.nn.Linear(120, 4000),
+        torch.nn.Softplus(),
+        torch.nn.Linear(4000, 2000),
+        torch.nn.Softplus(),
+        torch.nn.Linear(2000, 500),
+        torch.nn.Softplus(),
+        torch.nn.Linear(500, 3),
+        torch.nn.Sigmoid()
+    )
 
-model = torch.nn.Sequential(
-    torch.nn.Linear(120, 4000),
-    torch.nn.LeakyReLU(),
-    torch.nn.Linear(4000, 2000),
-    torch.nn.LeakyReLU(),
-    torch.nn.Linear(2000, 500),
-    torch.nn.LeakyReLU(),
-    torch.nn.Linear(500, 1),
-    torch.nn.Tanh()
-)
+    model.load_state_dict(torch.load('./models/model.pt'))
 
-model.load_state_dict(torch.load('./models/model.pt'))
+    dtype = torch.float
+    device = torch.device("cpu")
 
-learnRate = 0.0000001
-epochs = 100
-batchSize = 100
+    print('Getting data . . .\n')
 
-dtype = torch.float
-device = torch.device("cpu")
+    data = [[], []]
+    newData = GetTickerData('AAPL'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('SPY'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('AMD'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('INTC'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('META'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('MSFT'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('NVDA'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('AMZN'); data[0].extend(newData[0]); data[1].extend(newData[1])
 
-print('Getting data . . .\n')
+    dataLength = len(data[0])
+    print('')
 
-data = GetTickerData('AMZN')
-dataLength = len(data[0])
+    learnRate = 0.00000003
+    epochs = 60
+    batchSize = 1
 
-lossFunction = torch.nn.MSELoss(reduction='sum')
-optimizer = torch.optim.Adam(model.parameters(), lr=learnRate)
+    lossFunction = torch.nn.BCELoss(reduction='mean')
+    optimizer = torch.optim.Adam(model.parameters(), lr=learnRate)
 
-dataset = TensorDataset(torch.FloatTensor(data[0]), torch.FloatTensor(data[1]))
-loader = DataLoader(dataset, shuffle=True, batch_size=batchSize)
+    dataset = TensorDataset(torch.FloatTensor(data[0]), torch.FloatTensor(data[1]))
+    loader = DataLoader(dataset, shuffle=True, batch_size=batchSize, num_workers=4)
 
-data = None # Clear to save memory
+    data = None # Clear to save memory
+    dataset = None # Clear to save memory
 
-lossesArray = []
-epochsArray = []
-for epoch in range(epochs):
-    print(f"Epoch {epoch + 1}\n-------------------------------")
-    averageLossArray = []
+    # Train [Comment out to stop training]
+    # plt.style.use('ggplot'); plt.title('Loss'); plt.xlabel('Epoch'); plt.ylabel('Loss'); plt.figure(figsize=(10, 5)); plt.ion()
+    # lossesArray = []
+    # epochsArray = []
+    # for epoch in range(epochs):
+    #     print(f"Epoch {epoch + 1}\n-------------------------------")
+    #     averageLossArray = []
+    #     for i, [input, expectedOutput] in enumerate(loader):
+    #         input = torch.FloatTensor(input)
+    #         expectedOutput = torch.FloatTensor(expectedOutput)
+    #
+    #         prediction = model(input)
+    #         loss = lossFunction(prediction, expectedOutput)
+    #         averageLossArray.append(loss.item())
+    #         loss.backward(retain_graph=True)
+    #         optimizer.step()
+    #         optimizer.zero_grad()
+    #         print(f'\rTraining Sample : [{i}/{floor(dataLength/batchSize)}]', end='')
+    #     print(f'\rTraining Sample : [{i}/{floor(dataLength/batchSize)}]', end='')
+    #
+    #     averageLoss = (sum(averageLossArray))/(len(averageLossArray))
+    #     lossesArray.append(averageLoss)
+    #     epochsArray.append(epoch+1)
+    #
+    #     with torch.no_grad():
+    #         movingAverage = []
+    #         for i in range(0, len(lossesArray)):
+    #             length = 5
+    #             if i < length:
+    #                 continue
+    #             else:
+    #                 average = sum(lossesArray[i-length:i+1])/len(lossesArray[i-length:i+1])
+    #             movingAverage.append(average)
+    #
+    #         plt.clf()
+    #         plt.plot(np.array(epochsArray), np.array(lossesArray), linewidth=2, color='#4dbbfa', label='Loss')
+    #         plt.plot(np.array(epochsArray[5:]), np.array(movingAverage), linewidth=2, color='#fa4d4d', label='Trend')
+    #         plt.legend(loc='upper center')
+    #         plt.autoscale()
+    #         plt.draw()
+    #         plt.pause(0.001)
+    #
+    #     print(f'\nAverage Loss : {averageLoss}')
+    #     print('-------------------------------\n')
+    #
+    #     torch.save(model.state_dict(), './models/model.pt')
+    # plt.savefig('./loss.jpg')
+
+    # Test Accuracy
+    expectedOutputs = []
+    predictedOutputs = []
+
+    correct = 0
+    wrong = 0
+
+    print('Starting test data . . .')
     for i, [input, expectedOutput] in enumerate(loader):
-        # if len(input) != 120:
-        #     continue
-
         input = torch.FloatTensor(input)
-        expectedOutput = torch.FloatTensor(expectedOutput)
+        prediction = model(input)[0].tolist()
 
-        prediction = model(input.unsqueeze(dim=0))
-        loss = lossFunction(prediction, expectedOutput)
-        averageLossArray.append(loss)
-        loss.backward(retain_graph=True)
-        optimizer.step()
-        optimizer.zero_grad()
-        print(f'\rTraining Sample : [{i}/{round(dataLength/batchSize)}]', end='')
-    print(f'\rTraining Sample : [{i}/{round(dataLength/batchSize)}]', end='')
+        expectedOutput = expectedOutput[0].tolist()
 
-    averageLoss = (sum(averageLossArray))/(len(averageLossArray))
-    lossesArray.append(averageLoss)
-    epochsArray.append(epoch+1)
+        if expectedOutput.index(max(expectedOutput)) == prediction.index(max(prediction)):
+            correct += 1
+        else:
+            wrong += 1
 
-    # with torch.no_grad():
-    #     dataframe = dict(
-    #         Epoch = epochsArray,
-    #         Loss = lossesArray
-    #     )
-    #     figure = px.line(dataframe, x='Epoch', y='Loss', title='Loss Per Epoch')
-    #     figure.update()
-
-    print(f'\nAverage Loss : {averageLoss}')
-    print('-------------------------------\n')
-
-    torch.save(model.state_dict(), './models/model.pt')
+    print('Accuracy :', (correct/(correct+wrong))*100)
