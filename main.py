@@ -24,7 +24,7 @@ if __name__ == '__main__':
         torch.nn.Sigmoid()
     )
 
-    # model.load_state_dict(torch.load('./models/model.pt'))
+    model.load_state_dict(torch.load('./models/model.pt'))
 
     dtype = torch.float
     device = torch.device("cpu")
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     print('')
 
     learnRate = 0.00000003
-    epochs = 45
+    epochs = 60
     batchSize = 100
 
     lossFunction = torch.nn.BCELoss(reduction='mean')
