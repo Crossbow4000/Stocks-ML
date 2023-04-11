@@ -20,7 +20,7 @@ if __name__ == '__main__':
         torch.nn.Softplus(),
         torch.nn.Linear(2000, 500),
         torch.nn.Softplus(),
-        torch.nn.Linear(500, 3),
+        torch.nn.Linear(500, 2),
         torch.nn.Sigmoid()
     )
 
@@ -32,19 +32,19 @@ if __name__ == '__main__':
     print('Getting data . . .\n')
 
     data = [[], []]
-    newData = GetTickerData('TSLA'); data[0].extend(newData[0]); data[1].extend(newData[1])
-    newData = GetTickerData('SPY'); data[0].extend(newData[0]); data[1].extend(newData[1])
-    newData = GetTickerData('AMD'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('CVX'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('KO'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('MRK'); data[0].extend(newData[0]); data[1].extend(newData[1])
     newData = GetTickerData('INTC'); data[0].extend(newData[0]); data[1].extend(newData[1])
-    newData = GetTickerData('META'); data[0].extend(newData[0]); data[1].extend(newData[1])
-    newData = GetTickerData('MSFT'); data[0].extend(newData[0]); data[1].extend(newData[1])
-    newData = GetTickerData('AAPl'); data[0].extend(newData[0]); data[1].extend(newData[1])
-    newData = GetTickerData('AMZN'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('C'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('GE'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('CVS'); data[0].extend(newData[0]); data[1].extend(newData[1])
+    newData = GetTickerData('NKE'); data[0].extend(newData[0]); data[1].extend(newData[1])
 
     dataLength = len(data[0])
     print('')
 
-    learnRate = 0.00000003
+    learnRate = 0.0000001
     epochs = 60
     batchSize = 100
 
@@ -52,13 +52,13 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=learnRate)
 
     dataset = TensorDataset(torch.FloatTensor(data[0]), torch.FloatTensor(data[1]))
-    loader = DataLoader(dataset, shuffle=True, batch_size=batchSize, num_workers=os.cpu_count())
+    loader = DataLoader(dataset, shuffle=True, batch_size=batchSize)
 
     data = None # Clear to save memory
     dataset = None # Clear to save memory
 
     # Train [Comment out to stop training]
-    plt.style.use('ggplot'); plt.title('Loss'); plt.xlabel('Epoch'); plt.ylabel('Loss'); plt.figure(figsize=(10, 5)); plt.ion()
+    plt.style.use('ggplot'); plt.title('Loss'); plt.xlabel('Epoch'); plt.ylabel('Loss'); plt.ion()
     lossesArray = []
     epochsArray = []
     for epoch in range(epochs):
@@ -105,7 +105,14 @@ if __name__ == '__main__':
         torch.save(model.state_dict(), './models/model.pt')
     plt.savefig('./loss.jpg')
 
+
+
+
+
     # Test Accuracy
+    #
+    # [ RECORD ::: 67.12577962577963 ]
+    #
     # expectedOutputs = []
     # predictedOutputs = []
     #

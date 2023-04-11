@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
 def GetTickerData(ticker):
-	data = yf.download(tickers=ticker, period="60d", interval = "5m", ignore_tz = False, prepost = False, progress = False)
+	data = yf.download(tickers=ticker, period="10y", interval = "1d", ignore_tz = False, prepost = False, progress = False)
 
 	spread = [0, 0, 0]
 
@@ -13,7 +13,6 @@ def GetTickerData(ticker):
 	expectedOutputs = []
 
 	bp = 10
-	fcc = 16
 
 	atr = pta.atr(data['High'], data['Low'], data['Close'], len(data['Close'])-1)[-1]
 
@@ -27,7 +26,7 @@ def GetTickerData(ticker):
 	dataCCI = pta.cci(data['High'], data['Low'], data['Close'])
 	dataWILLR = pta.willr(data['High'], data['Low'], data['Close'])
 	dataEMA = (data['Close'] > pta.ema(data['Close'], 50)).astype(int)
-	for i in range(100, len(data['Close'])-fcc-2):
+	for i in range(100, len(data['Close'])-10):
 		change = np.array(dataChange[i-bp:i]) * 100
 		rsi = np.array(dataRSI[i-bp:i]) / 100
 		stochK = np.array(dataSTOCH[i-bp:i]['STOCHk_14_3_3']) / 100
@@ -55,24 +54,17 @@ def GetTickerData(ticker):
 		input.extend(willr.tolist())
 		input.extend(ema.tolist())
 		inputs.append(input)
-
-		for j in range(1, fcc+1):
-			startValue = data['Close'][i]
-			longPosition = startValue + atr * 2
-			shortPosition = startValue - atr * 2
-			if data['High'][i+j] > longPosition:
-				expectedOutputs.append([0, 0, 1])
-				spread[2] += 1
-				break
-			elif data['Low'][i+j] < shortPosition:
-				expectedOutputs.append([1, 0, 0])
-				spread[0] += 1
-				break
+		if len(inputs[-1]) != 120:
+			inputs.pop()
 		else:
-			expectedOutputs.append([0, 1, 0])
-			spread[1] += 1
+			if dataChange[i+1] > 0:
+				expectedOutputs.append([0, 1])
+				spread[1] += 1
+			else:
+				expectedOutputs.append([1, 0])
+				spread[0] += 1
 
-	print(f'{ticker}\nUp : {spread[2]/sum(spread)}\nDown : {spread[0]/sum(spread)}\nNo Change : {spread[1]/sum(spread)}\n')
+	print(f'{ticker}\nUp : {spread[1]/sum(spread)}\nDown : {spread[0]/sum(spread)}\n')
 	return [inputs, expectedOutputs]
 
 def GetTickerDataNormalized(ticker):
@@ -114,8 +106,5 @@ def GetTickerDataNormalized(ticker):
 		else:
 			target.append(0)
 	data['Target'] = target
-
-	data = data.dropna()
-	data = data.reset_index(drop=True)
 
 	return data
