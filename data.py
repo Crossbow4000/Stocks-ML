@@ -67,6 +67,67 @@ def GetTickerData(ticker):
 	print(f'{ticker}\nUp : {spread[1]/sum(spread)}\nDown : {spread[0]/sum(spread)}\n')
 	return [inputs, expectedOutputs]
 
+def GetMostRecentTickerData(ticker, currentOrNext='current'):
+	data = yf.download(tickers=ticker, period="60d", interval = "1d", ignore_tz = False, prepost = False, progress = False)
+
+	bp = 10
+
+	dataChange = data['Close'].pct_change()
+	dataRSI = pta.rsi(data['Close'], 14)
+	dataSTOCH = pta.stoch(data['High'], data['Low'], data['Close'])
+	dataCHOP = pta.chop(data['High'], data['Low'], data['Close'])
+	dataADX = pta.adx(data['High'], data['Low'], data['Close'])
+	dataAROON = pta.aroon(data['High'], data['Low'], 14)
+	dataBOP = pta.bop(data['Open'], data['High'], data['Low'], data['Close'])
+	dataCCI = pta.cci(data['High'], data['Low'], data['Close'])
+	dataWILLR = pta.willr(data['High'], data['Low'], data['Close'])
+	dataEMA = (data['Close'] > pta.ema(data['Close'], 50)).astype(int)
+	
+	if currentOrNext == 'current':
+		change = np.array(dataChange[-11:-1]) * 100
+		rsi = np.array(dataRSI[-11:-1]) / 100
+		stochK = np.array(dataSTOCH[-11:-1]['STOCHk_14_3_3']) / 100
+		stochD = np.array(dataSTOCH[-11:-1]['STOCHd_14_3_3']) / 100
+		chop = np.array(dataCHOP[-11:-1]) / 100
+		adx = np.array(dataADX[-11:-1]['ADX_14']) / 100
+		aroonUp = np.array(dataAROON[-11:-1]['AROONU_14']) / 100
+		aroonDown = np.array(dataAROON[-11:-1]['AROOND_14']) / 100
+		bop = (np.array(dataBOP[-11:-1]) + 1)
+		cci = np.array(dataCCI[-11:-1]) / 100
+		willr = np.array(dataWILLR[-11:-1]) / -100
+		ema = np.array(dataEMA[-11:-1])
+	else:
+		change = np.array(dataChange[-10:]) * 100
+		rsi = np.array(dataRSI[-10:]) / 100
+		stochK = np.array(dataSTOCH[-10:]['STOCHk_14_3_3']) / 100
+		stochD = np.array(dataSTOCH[-10:]['STOCHd_14_3_3']) / 100
+		chop = np.array(dataCHOP[-10:]) / 100
+		adx = np.array(dataADX[-10:]['ADX_14']) / 100
+		aroonUp = np.array(dataAROON[-10:]['AROONU_14']) / 100
+		aroonDown = np.array(dataAROON[-10:]['AROOND_14']) / 100
+		bop = (np.array(dataBOP[-10:]) + 1)
+		cci = np.array(dataCCI[-10:]) / 100
+		willr = np.array(dataWILLR[-10:]) / -100
+		ema = np.array(dataEMA[-10:])
+
+	input = []
+	input.extend(change.tolist())
+	input.extend(rsi.tolist())
+	input.extend(stochK.tolist())
+	input.extend(stochD.tolist())
+	input.extend(chop.tolist())
+	input.extend(adx.tolist())
+	input.extend(aroonUp.tolist())
+	input.extend(aroonDown.tolist())
+	input.extend(bop.tolist())
+	input.extend(cci.tolist())
+	input.extend(willr.tolist())
+	input.extend(ema.tolist())
+	return [input]
+
+GetMostRecentTickerData('TSLA')
+
+
 def GetTickerDataNormalized(ticker):
 	data = yf.download(tickers=ticker, period="60d", interval = "5m", ignore_tz = False, prepost = False, progress = False)
 	scaler = MinMaxScaler()
