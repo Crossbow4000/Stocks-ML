@@ -1,0 +1,13 @@
+{
+  "customizations": {
+    "vscode": {
+      "extensions": [
+      ]
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/nvidia-cuda:1": {
+      "installCudnn": true
+    }
+  }
+}
